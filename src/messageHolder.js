@@ -25,7 +25,7 @@ const MessageHolder = (props) => {
 
     return (
         <div>
-            <span>{message}</span>
+          <span>{message}</span>
         </div>
     )
 }
