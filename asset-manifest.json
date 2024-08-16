@@ -1,0 +1,14 @@
+{
+  "files": {
+    "main.css": "/nus-iss-container-scaling/static/css/main.79e68cc0.css",
+    "main.js": "/nus-iss-container-scaling/static/js/main.66e87d1f.js",
+    "static/media/image.png": "/nus-iss-container-scaling/static/media/image.482aec5d151eb53ef803.png",
+    "index.html": "/nus-iss-container-scaling/index.html",
+    "main.79e68cc0.css.map": "/nus-iss-container-scaling/static/css/main.79e68cc0.css.map",
+    "main.66e87d1f.js.map": "/nus-iss-container-scaling/static/js/main.66e87d1f.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.79e68cc0.css",
+    "static/js/main.66e87d1f.js"
+  ]
+}
