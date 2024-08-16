@@ -20,6 +20,7 @@ const MessageHolder = (props) => {
             console.log(JSON.stringify(messageObj));
             setMessage(messageObj.data);
         }
+
         fetchData();
     }, []);
 
