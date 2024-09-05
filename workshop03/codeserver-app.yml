@@ -1,0 +1,72 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: codeserver-deploy
+  namespace: codeserver
+  labels:
+    app: codeserver
+    name: codeserver-deploy
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: codeserver
+      name: codeserver-po
+  template:
+    metadata:
+      labels:
+        app: codeserver
+        name: codeserver-po
+    spec:
+      securityContext:
+        fsGroup: 1000
+      volumes:
+      - name: codeserver-vol
+        persistentVolumeClaim:
+          claimName: mysql-pvc
+      containers:
+      - name: codeserver-container
+        image: linuxserver/code-server:amd64-4.92.2
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: PUID
+          value: "1000"
+        - name: PGID
+          value: "1000"
+        envFrom:
+        - configMapRef:
+            name: codeserver-cm
+        - secretRef:
+            name: codeserver-secret
+        ports:
+        - name: app-port
+          containerPort: 8443
+        resources:
+          # with request no limit: burstable
+          # with request and limit: guaranteed
+          # else: best effort
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: codeserver-svc
+  namespace: codeserver
+  labels: 
+    app: codeserver
+    name: codeserver-svc
+spec:
+  type: ClusterIP
+  selector:
+    app: codeserver
+  ports:
+  - port: 8443
+    targetPort: app-port

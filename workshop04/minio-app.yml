@@ -1,0 +1,141 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: minio-cm
+  namespace: minions
+  labels:
+    app: minio
+    name: minio-cm
+data:
+  MINIO_ROOT_USER: root 
+  MINIO_DATA_DIR: /data
+  MINIO_DISTRIBUTED_MODE_ENABLED: "yes"
+  MINIO_DISTRIBUTED_NODES: minio-sts-{0...3}.minio-hsvc.minio-ns.svc.cluster.local/data
+  MINIO_API_PORT_NUMBER: "9000"
+  MINIO_CONSOLE_PORT_NUMBER: "9090"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: minio-secret
+  namespace: minions
+  labels:
+    app: minio
+    name: minio-secret
+type: Opaque
+data:
+  MINIO_ROOT_PASSWORD: bWluaW9hZG1pbg==
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio-hsvc
+  namespace: minions
+  labels:
+    app: minio
+    name: minio-hsvc
+spec:
+  clusterIP: None #This indicates a headless service
+  selector:
+    app: minio
+    name: minio-po
+  ports:
+  - port: 9090
+    targetPort: 9000
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: minio-sts
+  namespace: minions
+spec:
+  replicas: 4
+  serviceName: minio-hsvc
+  selector:
+    matchLabels:
+      app: minio
+  volumeClaimTemplates:
+  - metadata:
+      name: data-vol
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi
+      storageClassName: do-block-storage
+
+  template:
+    metadata:
+      labels:
+        app: minio
+    spec:
+      securityContext:
+        fsGroup: 1001
+      containers:
+      - name: minio-container
+        image: bitnami/minio:2024.8.29
+        volumeMounts:
+        - name: data-vol
+          mountPath: /data
+        imagePullPolicy: IfNotPresent
+        envFrom:
+        - configMapRef:
+            name: minio-cm
+        - secretRef:
+            name: minio-secret
+        ports:
+        - containerPort: 9000
+        - containerPort: 9090
+
+---
+# create 2 ingress, reference the same service, different port
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: console-ing
+  namespace: minions
+  labels: 
+    app: minio
+    name: console-ing
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: console-146.190.195.227.nip.io # external ip from ingress controller in ingress namespace
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: minio-hsvc # the name of the service the ingress should point to
+            port:
+              number: 9090 # the port that the service exposes
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: data-ing
+  namespace: minions
+  labels: 
+    app: minio
+    name: data-ing
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: data-146.190.195.227.nip.io # external ip from ingress controller in ingress namespace
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: minio-hsvc # the name of the service the ingress should point to
+            port:
+              number: 9000 # the port that the service exposes

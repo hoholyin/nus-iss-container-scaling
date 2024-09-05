@@ -1,0 +1,50 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config
+  namespace: default
+data:
+  # key will be filename, value will be content
+  readme.txt: |
+    hello, world
+    hello, world
+    hello, world
+  values.yaml:  |
+    controller: 
+      image:
+        image: fred/myimage
+    
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mysql-po
+  namespace: default
+spec:
+  # volumes are outside of the containers
+  # usecase: share some public keys across pods in the same namespace
+  volumes:
+  - name: config-vol
+    configMap:
+      name: config # match the name as defined in ConfigMap metadata name
+  - name: data-vol
+    emptyDir: {} # when pod dies, this volume will be deleted due to emptyDir. For intercontainer sharing data
+  #  hostPath:
+  #    path: /opt/data
+  #    type: DirectoryOrCreate
+  
+  # these containers are mount to same volume but different mountpath. So containers can pass data
+  containers:
+  - name: mysql-container
+    image: mysql:8
+    env:
+    - name: MYSQL_ROOT_PASSWORD
+      value: changeit
+    ports:
+    - containerPort: 3306
+    volumeMounts:
+    - name: config-vol #references the volume mount as defined on top
+      mountPath: /var/lib/mysql
+      readOnly: true
+    resources: {}

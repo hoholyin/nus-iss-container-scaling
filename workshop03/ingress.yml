@@ -1,0 +1,23 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: codeserver-ing
+  namespace: codeserver
+  labels: 
+    app: codeserver
+    name: codeserver-ing
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: code-146.190.195.227.nip.io # external ip from ingress controller in ingress namespace
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: codeserver-svc # the name of the service the ingress should point to
+            port:
+              number: 8443 # the port that the service exposes
+
